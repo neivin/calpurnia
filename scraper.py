@@ -111,6 +111,9 @@ def get_courses(url):
 	return courses_list
 
 def write_courses_to_db(verbose):
+	if verbose:
+		print ('Building database of courses...')
+
 	conn = sqlite3.connect('./_db/courses.db')
 	cur = conn.cursor()
 	

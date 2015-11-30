@@ -37,8 +37,6 @@ def build_query(course_list):
 	for course in course_list:
 		code = course[-4:]
 		sec = course[:-4]
-		print (sec + ' code - ' + code)
-
 		query += ' (section="'+sec.upper()+'" AND code="'+code+'") OR'
 
 	query = query[:-2].strip()
@@ -78,6 +76,7 @@ def main():
 			print ('Error: CIS*'+str(num) + ' is not an offered course.\n')
 	'''
 
+	make_db(True)
 	get_courses_from_db(args.courses)
 
 
