@@ -40,6 +40,7 @@ def main():
 		except (KeyError):
 			print ('Error: CIS*'+str(num) + ' is not an offered course.\n')
 
+	scraper.get_depts_list('')
 
 if __name__=='__main__':
 	main()
