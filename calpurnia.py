@@ -1,6 +1,9 @@
+#!/usr/bin/python3
+
 import argparse
 import scraper
 import os.path
+import sqlite3
 
 def get_course_string(course):
 	GREEN = '\033[92m'
@@ -9,44 +12,74 @@ def get_course_string(course):
 	END = '\033[0m'
 
 
-	course_string = BOLD + GREEN  + UNDERLINE+ "CIS*" + str(course['code']) + " " + course['title'] + " [" + course['credit'] + "]\n"  +  END
-	course_string = course_string + course['description'] + "\n"
+	course_string = BOLD + GREEN  + UNDERLINE+ course['section'] + '*' + course['code'] + " " + course['title'] + " [" + course['credit'] + "]\n"  +  END
+	course_string = course_string + course['desc'] + "\n"
 	
-	if (course['offerings']):
-		course_string = course_string + BOLD + "Offerings: "+ END + course['offerings'] + "\n"
+	if (course['off']):
+		course_string = course_string + BOLD + "Offerings: "+ END + course['off'] + "\n"
 	
 	if (course['prereqs']):
 		course_string = course_string + BOLD + "Prerequisites: "+ END + course['prereqs'] + "\n"
 	
-	if (course['restrictions']):
-		course_string = course_string + BOLD + "Restrictions: "+ END + course['restrictions'] + "\n"
+	if (course['restr']):
+		course_string = course_string + BOLD + "Restrictions: "+ END + course['restr'] + "\n"
 
 	return course_string
 
+def make_db(verbose):
+	if not os.path.exists('./_db/courses.db'):
+		scraper.write_courses_to_db(verbose)
 
-def get_courses_from_Db(dept, code_list){
+
+def build_query(course_list):
+	query = 'SELECT * FROM courses WHERE'
+
+	for course in course_list:
+		code = course[-4:]
+		sec = course[:-4]
+		print (sec + ' code - ' + code)
+
+		query += ' (section="'+sec.upper()+'" AND code="'+code+'") OR'
+
+	query = query[:-2].strip()
+	#print (query)
+	return query 
+
+
+def get_courses_from_db(course_list):
+	conn = sqlite3.connect('./_db/courses.db')
+
+	with conn:
+		conn.row_factory = sqlite3.Row
+
+		cur = conn.cursor()
+		
+		query = build_query(course_list)
+		cur.execute(query)
+
+		rows = cur.fetchall()
+
+		for row in rows:
+			print (get_course_string(row))
 	
-}
 
 def main():
 
-	CALENDAR_URL = 'https://www.uoguelph.ca/registrar/calendars/undergraduate/2015-2016/c12/c12cis.shtml'
-	
-	courses = scraper.get_courses(CALENDAR_URL)
-
 	parser = argparse.ArgumentParser()
-	parser.add_argument('courses', nargs='+', type=int)
+	parser.add_argument('courses', nargs='+')
 
 	args = parser.parse_args()
 
-	for num in args.courses:
+	'''
+	for course in args.courses:
 		try:
-			selected_course = courses[num]
-			print (get_course_string(selected_course))
+			
 		except (KeyError):
 			print ('Error: CIS*'+str(num) + ' is not an offered course.\n')
+	'''
 
-	scraper.get_depts_list('')
+	get_courses_from_db(args.courses)
+
 
 if __name__=='__main__':
 	main()

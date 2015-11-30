@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from bs4 import BeautifulSoup
 import urllib3
 import sqlite3
@@ -109,8 +110,8 @@ def get_courses(url):
 
 	return courses_list
 
-def write_courses_to_db():
-	conn = sqlite3.connect('courses.db')
+def write_courses_to_db(verbose):
+	conn = sqlite3.connect('./_db/courses.db')
 	cur = conn.cursor()
 	
 	depts_list = get_depts_list(INDEXURL)
@@ -126,10 +127,10 @@ def write_courses_to_db():
 		# Make a dicitionary for the department courses
 		dept_courses_list = get_courses(dept_url)
 
+		if verbose:
+			print("Adding "+dept.upper()+ " courses...")
 		# Add all the courses into the db
 		for course in dept_courses_list:
-			if dept == 'soc':
-				print (course['title'])
 			cur.execute("INSERT INTO courses VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", (course['section'], course['code'], course['title'], course['credit'], course['description'], course['offerings'], course['restrictions'], course['prereqs'], course['dept'] ))
 		
 		conn.commit()
