@@ -24,7 +24,9 @@ def get_course_string(course):
 	return course_string
 
 
-def get_courses_from
+def get_courses_from_Db(dept, code_list){
+	
+}
 
 def main():
 
