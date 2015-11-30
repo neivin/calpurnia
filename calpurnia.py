@@ -1,5 +1,6 @@
 import argparse
 import scraper
+import os.path
 
 def get_course_string(course):
 	GREEN = '\033[92m'
@@ -21,6 +22,9 @@ def get_course_string(course):
 		course_string = course_string + BOLD + "Restrictions: "+ END + course['restrictions'] + "\n"
 
 	return course_string
+
+
+def get_courses_from
 
 def main():
 

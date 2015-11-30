@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 import urllib3
 import sqlite3
 
+INDEXURL = 'https://www.uoguelph.ca/registrar/calendars/undergraduate/2015-2016/c12/index.shtml'
+
 def get_depts_list(index_url):
 	#index_url = 'https://www.uoguelph.ca/registrar/calendars/undergraduate/2015-2016/c12/index.shtml'
 	
@@ -18,33 +20,6 @@ def get_depts_list(index_url):
 
 	# Remove index.shtml item from list
 	return depts[1:]
-
-def write_courses_to_db():
-	conn = sqlite3.connect('courses.db')
-	cur = conn.cursor()
-
-	url = 'https://www.uoguelph.ca/registrar/calendars/undergraduate/2015-2016/c12/index.shtml'
-	depts_list = get_depts_list(url)
-
-	for dept in depts_list:
-		# Make the url for each department
-		dept_url = 'https://www.uoguelph.ca/registrar/calendars/undergraduate/2015-2016/c12/c12'+ dept + '.shtml'
-		
-		# Make a dicitionary for the department
-		dept_courses_list = get_courses(dept_url)
-
-		# Make the table for the dept
-		cur.execute("DROP TABLE IF EXISTS " + dept)
-		cur.execute("CREATE TABLE " + dept + " (code TEXT PRIMARY KEY, title TEXT, credit TEXT, desc TEXT, off TEXT, restr TEXT, prereqs TEXT, dept TEXT)")
-
-		for course in dept_courses_list:
-			print (course['title'])
-			cur.execute("INSERT INTO " + dept + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)", (course['code'], course['title'], course['credit'], course['description'], course['offerings'], course['restrictions'], course['prereqs'], course['dept'] ))
-		
-		conn.commit()
-
-	conn.close()
-
 
 
 def get_courses_from_url(cal_url):
@@ -96,15 +71,17 @@ def get_course(course):
 	title = title_line[first_space_index:-12].strip()
 	
 	# Make course code
-	star_index = title_line.index('*') + 1
+	star_index = title_line.index('*')
 
-	code = title_line[star_index:first_space_index]
+	section = title_line[:star_index]
+	code = title_line[(star_index+1):first_space_index]
 
 	# Make course credit
 	credit = title_line[-5:-1]
 
 	# Return a dictionary of course data
-	return {'code': code,
+	return {'section': section,
+			'code': code,
 			'title': title,
 			'sems': [],
 			'credit':credit,
@@ -132,4 +109,30 @@ def get_courses(url):
 
 	return courses_list
 
+def write_courses_to_db():
+	conn = sqlite3.connect('courses.db')
+	cur = conn.cursor()
+	
+	depts_list = get_depts_list(INDEXURL)
+
+	# Create the db table
+	cur.execute("DROP TABLE IF EXISTS courses")
+	cur.execute("CREATE TABLE courses (section TEXT, code TEXT, title TEXT, credit TEXT, desc TEXT, off TEXT, restr TEXT, prereqs TEXT, dept TEXT, PRIMARY KEY (section, code))")
+	
+	for dept in depts_list:
+		# Make the url for each department
+		dept_url = 'https://www.uoguelph.ca/registrar/calendars/undergraduate/2015-2016/c12/c12'+ dept + '.shtml'
+		
+		# Make a dicitionary for the department courses
+		dept_courses_list = get_courses(dept_url)
+
+		# Add all the courses into the db
+		for course in dept_courses_list:
+			if dept == 'soc':
+				print (course['title'])
+			cur.execute("INSERT INTO courses VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", (course['section'], course['code'], course['title'], course['credit'], course['description'], course['offerings'], course['restrictions'], course['prereqs'], course['dept'] ))
+		
+		conn.commit()
+
+	conn.close()
 
