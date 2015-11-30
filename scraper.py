@@ -31,11 +31,19 @@ def write_courses_to_db():
 		dept_url = 'https://www.uoguelph.ca/registrar/calendars/undergraduate/2015-2016/c12/c12'+ dept + '.shtml'
 		
 		# Make a dicitionary for the department
-		dept_courses_dict = get_courses(dept_url)
+		dept_courses_list = get_courses(dept_url)
 
 		# Make the table for the dept
 		cur.execute("DROP TABLE IF EXISTS " + dept)
-		cur.execute("CREATE TABLE " + dept + " (code INT PRIMARY KEY, title TEXT, credit TEXT, desc TEXT, off TEXT, restr TEXT, prereq TEXT, dept TEXT)")
+		cur.execute("CREATE TABLE " + dept + " (code TEXT PRIMARY KEY, title TEXT, credit TEXT, desc TEXT, off TEXT, restr TEXT, prereqs TEXT, dept TEXT)")
+
+		for course in dept_courses_list:
+			print (course['title'])
+			cur.execute("INSERT INTO " + dept + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)", (course['code'], course['title'], course['credit'], course['description'], course['offerings'], course['restrictions'], course['prereqs'], course['dept'] ))
+		
+		conn.commit()
+
+	conn.close()
 
 
 
@@ -50,7 +58,7 @@ def get_courses_from_url(cal_url):
 
 def get_course(course):
 	# Get the title line with course code, title, semester list, and credits
-	title_line = course.find('tr', class_="title").find('th').find('a').getText()
+	title_line = course.find('tr', class_="title").find('th').find('a').getText().strip()
 	
 	# Get the course description
 	desc_line = course.find('tr', class_="description").find('td').getText().strip();
@@ -82,12 +90,15 @@ def get_course(course):
 	# Get departments
 	deps_line = course.find('tr', class_="departments").find('td').text.strip()
 
+	first_space_index = title_line.index(' ')
+
 	# Make the course title
-	title = title_line[9:-12].strip()
-	print (title_line)
+	title = title_line[first_space_index:-12].strip()
+	
 	# Make course code
 	star_index = title_line.index('*') + 1
-	code = int(title_line[star_index:star_index+4])
+
+	code = title_line[star_index:first_space_index]
 
 	# Make course credit
 	credit = title_line[-5:-1]
@@ -104,21 +115,21 @@ def get_course(course):
 			'dept': deps_line }
 
 		
-def make_courses_dict(courses):
-	courses_dict = {}
+def make_courses_list(courses):
+	courses_list = []
 	for course in courses:
 		# Get the dictionary of data for each course
 		course_dict = get_course(course)
 
-		#MAdd to the dictionary of courses with course code as key
-		courses_dict[course_dict['code']] = course_dict
+		# Add to the list of courses
+		courses_list.append(course_dict)
 
-	return courses_dict
+	return courses_list
 
 def get_courses(url):
 	courses = get_courses_from_url(url)
-	courses_dict = make_courses_dict(courses)
+	courses_list = make_courses_list(courses)
 
-	return courses_dict
+	return courses_list
 
 
